@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📊 HW_III Vega-Lite Visualization Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.15.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f9;
+    }
+
+    header {
+      background-color: #1f2937;
+      color: white;
+      padding: 20px 30px;
+      font-size: 28px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 25px;
+      padding: 30px;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .chart {
+      min-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <header>📊 HW_III Vega-Lite Visualization Dashboard</header>
+  <div class="dashboard">
+    <div class="card">
+      <div class="card-title">Total Sales per Rep (Donut Chart)</div>
+      <div id="donut" class="chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Units vs Unit Cost (With Brush Selection)</div>
+      <div id="scatter" class="chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Histogram of Units with Mean Line</div>
+      <div id="histogram" class="chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Over Time by Item (Streamgraph)</div>
+      <div id="stream" class="chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Average Total by Item (Bar Chart)</div>
+      <div id="avgbar" class="chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Unit Cost over Time by Rep</div>
+      <div id="line" class="chart"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    const dataUrl = "https://gist.githubusercontent.com/Nishant38/a9e959e08a5d350f944cc15ab83dce9a/raw/963f9cf93c32f92093c839ef66461f88bd799768/HW_III.csv";
+
+    const specs = {
+      donut: {
+        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+        data: { url: dataUrl },
+        mark: { type: "arc", innerRadius: 50 },
+        encoding: {
+          theta: { field: "Total", type: "quantitative" },
+          color: { field: "Rep", type: "nominal", scale: { scheme: "category10" } },
+          tooltip: [{ field: "Rep" }, { field: "Total" }]
+        }
+      },
+      scatter: {
+        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+        data: { url: dataUrl },
+        params: [{ name: "brush", select: "interval" }],
+        mark: "point",
+        encoding: {
+          x: { field: "Units", type: "quantitative" },
+          y: { field: "Unit Cost", type: "quantitative" },
+          color: {
+            condition: { param: "brush", value: "steelblue" },
+            value: "lightgray"
+          },
+          tooltip: [{ field: "Units" }, { field: "Unit Cost" }, { field: "Item" }]
+        }
+      },
+      histogram: {
+        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+        layer: [
+          {
+            data: { url: dataUrl },
+            mark: "bar",
+            encoding: {
+              x: { field: "Units", bin: true },
+              y: { aggregate: "count" },
+              tooltip: [{ field: "Units" }]
+            }
+          },
+          {
+            data: { url: dataUrl },
+            mark: { type: "rule", color: "red", size: 2 },
+            encoding: {
+              x: { aggregate: "mean", field: "Units" },
+              tooltip: [
+                { aggregate: "mean", field: "Units", title: "Mean Units" }
+              ]
+            }
+          }
+        ]
+      },
+      stream: {
+        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+        data: { url: dataUrl },
+        transform: [{ calculate: "toDate(datum.OrderDate)", as: "ParsedDate" }],
+        mark: { type: "area", interpolate: "monotone" },
+        encoding: {
+          x: { field: "ParsedDate", type: "temporal" },
+          y: { field: "Total", type: "quantitative", stack: "center" },
+          color: { field: "Item", type: "nominal", scale: { scheme: "category10" } },
+          tooltip: [{ field: "Item" }, { field: "Total" }, { field: "ParsedDate" }]
+        }
+      },
+      avgbar: {
+        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+        data: { url: dataUrl },
+        mark: "bar",
+        encoding: {
+          x: { field: "Item", type: "nominal" },
+          y: { aggregate: "mean", field: "Total" },
+          color: { field: "Item", type: "nominal", scale: { scheme: "category10" } },
+          tooltip: [
+            { field: "Item" },
+            { aggregate: "mean", field: "Total", title: "Avg Total" }
+          ]
+        }
+      },
+      line: {
+        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+        data: { url: dataUrl },
+        transform: [{ calculate: "toDate(datum.OrderDate)", as: "ParsedDate" }],
+        mark: "line",
+        encoding: {
+          x: { field: "ParsedDate", type: "temporal" },
+          y: { field: "Unit Cost", type: "quantitative" },
+          color: { field: "Rep", type: "nominal", scale: { scheme: "category10" } },
+          tooltip: [{ field: "Rep" }, { field: "Unit Cost" }, { field: "ParsedDate" }]
+        }
+      }
+    };
+
+    vegaEmbed("#donut", specs.donut, { actions: false });
+    vegaEmbed("#scatter", specs.scatter, { actions: false });
+    vegaEmbed("#histogram", specs.histogram, { actions: false });
+    vegaEmbed("#stream", specs.stream, { actions: false });
+    vegaEmbed("#avgbar", specs.avgbar, { actions: false });
+    vegaEmbed("#line", specs.line, { actions: false });
+  </script>
+</body>
+</html>
