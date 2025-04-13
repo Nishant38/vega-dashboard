@@ -6,15 +6,14 @@ A beautifully crafted interactive data visualization dashboard built using **Veg
 
 ## 🌐 Live Demo
 
-🔗 [Click here to view the live dashboard](https://yourusername.github.io/your-repo/)  
-*(Replace with your actual GitHub Pages link)*
+🔗 [Click here to view the live dashboard](https://nishant38.github.io/vega-dashboard/)
 
 ---
 
 ## 📸 Preview
 
-![Dashboard Preview](preview.png)  
-<sub>*Add a screenshot of your dashboard and name it `preview.png`*</sub>
+![image](https://github.com/user-attachments/assets/595616d1-f685-4479-ad49-d7f42cd252b7)
+
 
 ---
 
