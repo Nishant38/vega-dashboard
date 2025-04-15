@@ -11,7 +11,8 @@ A beautifully crafted interactive data visualization dashboard built using **Veg
 ---
 
 ## 📸 Preview
-![image](https://github.com/user-attachments/assets/6e8710e5-cfe4-48aa-a370-0305762688e3)
+![image](https://github.com/user-attachments/assets/a0160eb5-86f3-4821-a48d-6a4ea4d413d9)
+
 
 
 
