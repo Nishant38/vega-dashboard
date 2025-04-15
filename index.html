@@ -2,183 +2,245 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>📊 HW_III Vega-Lite Visualization Dashboard</title>
+  <title>DV Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.15.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f6f9;
-    }
-
-    header {
-      background-color: #1f2937;
-      color: white;
-      padding: 20px 30px;
-      font-size: 28px;
-      font-weight: 600;
-      text-align: center;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-      gap: 25px;
-      padding: 30px;
-    }
-
-    .card {
-      background-color: white;
-      border-radius: 15px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-      padding: 20px;
-    }
-
-    .card-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
+      font-family: sans-serif;
+      background-color: #f5f7fa;
       color: #333;
     }
-
-    .chart {
-      min-height: 300px;
+    h1 {
+      text-align: center;
+      color: #2c3e50;
     }
   </style>
 </head>
 <body>
-  <header>📊 HW_III Vega-Lite Visualization Dashboard</header>
-  <div class="dashboard">
-    <div class="card">
-      <div class="card-title">Total Sales per Rep (Donut Chart)</div>
-      <div id="donut" class="chart"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Units vs Unit Cost (With Brush Selection)</div>
-      <div id="scatter" class="chart"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Histogram of Units with Mean Line</div>
-      <div id="histogram" class="chart"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Total Over Time by Item (Streamgraph)</div>
-      <div id="stream" class="chart"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Average Total by Item (Bar Chart)</div>
-      <div id="avgbar" class="chart"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Unit Cost over Time by Rep</div>
-      <div id="line" class="chart"></div>
-    </div>
-  </div>
-
+  <h1>Vega Visualization Dashboard</h1>
+  <div id="vis"></div>
   <script type="text/javascript">
-    const dataUrl = "https://gist.githubusercontent.com/Nishant38/a9e959e08a5d350f944cc15ab83dce9a/raw/963f9cf93c32f92093c839ef66461f88bd799768/HW_III.csv";
 
-    const specs = {
-      donut: {
-        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-        data: { url: dataUrl },
-        mark: { type: "arc", innerRadius: 50 },
-        encoding: {
-          theta: { field: "Total", type: "quantitative" },
-          color: { field: "Rep", type: "nominal", scale: { scheme: "category10" } },
-          tooltip: [{ field: "Rep" }, { field: "Total" }]
-        }
+    const url = "https://gist.githubusercontent.com/Nishant38/a9e959e08a5d350f944cc15ab83dce9a/raw/9e8fbe0c3101908454939b95bf780f922980c558/HW_III.csv";
+    const customColors = ["#1abc9c", "#3498db", "#9b59b6", "#f39c12", "#e74c3c", "#2ecc71", "#34495e", "#16a085"];
+
+    const spec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "config": {
+        "background": "#f5f7fa",
+        "axis": { "labelColor": "#333", "titleColor": "#333" },
+        "legend": { "labelColor": "#333", "titleColor": "#333" }
       },
-      scatter: {
-        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-        data: { url: dataUrl },
-        params: [{ name: "brush", select: "interval" }],
-        mark: "point",
-        encoding: {
-          x: { field: "Units", type: "quantitative" },
-          y: { field: "Unit Cost", type: "quantitative" },
-          color: {
-            condition: { param: "brush", value: "steelblue" },
-            value: "lightgray"
-          },
-          tooltip: [{ field: "Units" }, { field: "Unit Cost" }, { field: "Item" }]
-        }
-      },
-      histogram: {
-        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-        layer: [
-          {
-            data: { url: dataUrl },
-            mark: "bar",
-            encoding: {
-              x: { field: "Units", bin: true },
-              y: { aggregate: "count" },
-              tooltip: [{ field: "Units" }]
-            }
-          },
-          {
-            data: { url: dataUrl },
-            mark: { type: "rule", color: "red", size: 2 },
-            encoding: {
-              x: { aggregate: "mean", field: "Units" },
-              tooltip: [
-                { aggregate: "mean", field: "Units", title: "Mean Units" }
-              ]
-            }
+      "description": "Multiview dashboard with global item filter.",
+      "params": [
+        {
+          "name": "ItemFilter",
+          "bind": {
+            "input": "select",
+            "options": [null]
           }
-        ]
-      },
-      stream: {
-        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-        data: { url: dataUrl },
-        transform: [{ calculate: "toDate(datum.OrderDate)", as: "ParsedDate" }],
-        mark: { type: "area", interpolate: "monotone" },
-        encoding: {
-          x: { field: "ParsedDate", type: "temporal" },
-          y: { field: "Total", type: "quantitative", stack: "center" },
-          color: { field: "Item", type: "nominal", scale: { scheme: "category10" } },
-          tooltip: [{ field: "Item" }, { field: "Total" }, { field: "ParsedDate" }]
         }
-      },
-      avgbar: {
-        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-        data: { url: dataUrl },
-        mark: "bar",
-        encoding: {
-          x: { field: "Item", type: "nominal" },
-          y: { aggregate: "mean", field: "Total" },
-          color: { field: "Item", type: "nominal", scale: { scheme: "category10" } },
-          tooltip: [
-            { field: "Item" },
-            { aggregate: "mean", field: "Total", title: "Avg Total" }
+      ],
+      "vconcat": [
+        {
+          "hconcat": [
+            {
+              "title": "Total Sales by Representative (Donut Chart)",
+              "width": 300,
+              "height": 300,
+              "data": { "url": url, "format": { "type": "csv" } },
+              "transform": [
+                {
+                  "aggregate": [{ "op": "sum", "field": "Total", "as": "TotalSum" }],
+                  "groupby": ["Rep"]
+                }
+              ],
+              "mark": { "type": "arc", "innerRadius": 80 },
+              "encoding": {
+                "theta": { "field": "TotalSum", "type": "quantitative" },
+                "color": {
+                  "field": "Rep",
+                  "type": "nominal",
+                  "scale": { "range": customColors }
+                },
+                "tooltip": [
+                  { "field": "Rep", "type": "nominal" },
+                  { "field": "TotalSum", "type": "quantitative", "title": "Total" }
+                ]
+              },
+              "view": { "stroke": null }
+            },
+            {
+              "title": "Units vs Unit Cost by Item",
+              "width": 400,
+              "height": 300,
+              "data": { "url": url, "format": { "type": "csv" } },
+              "transform": [
+                { "filter": "ItemFilter == null || datum.Item == ItemFilter" }
+              ],
+              "params": [
+                {
+                  "name": "brush",
+                  "select": { "type": "interval" },
+                  "value": { "x": [50, 150], "y": [0, 100] }
+                }
+              ],
+              "mark": "point",
+              "encoding": {
+                "x": { "field": "Units", "type": "quantitative" },
+                "y": { "field": "Unit Cost", "type": "quantitative" },
+                "color": {
+                  "condition": {
+                    "param": "brush",
+                    "field": "Item",
+                    "type": "nominal",
+                    "scale": { "range": customColors }
+                  },
+                  "value": "lightgrey"
+                },
+                "tooltip": [
+                  { "field": "Item", "type": "nominal" },
+                  { "field": "Units", "type": "quantitative" },
+                  { "field": "Unit Cost", "type": "quantitative" }
+                ]
+              },
+              "view": { "stroke": null }
+            },
+            {
+              "title": "Monthly Total Sales by Item (Streamgraph)",
+              "width": 500,
+              "height": 300,
+              "data": { "url": url, "format": { "type": "csv" } },
+              "transform": [
+                { "filter": "datum.OrderDate != null && datum.OrderDate !== ''" },
+                { "calculate": "toDate(datum.OrderDate)", "as": "ParsedDate" },
+                { "timeUnit": "yearmonth", "field": "ParsedDate", "as": "Month" },
+                { "filter": "ItemFilter == null || datum.Item == ItemFilter" },
+                {
+                  "aggregate": [{ "op": "sum", "field": "Total", "as": "TotalSum" }],
+                  "groupby": ["Month", "Item"]
+                }
+              ],
+              "mark": { "type": "area", "interpolate": "monotone" },
+              "encoding": {
+                "x": { "field": "Month", "type": "temporal" },
+                "y": { "field": "TotalSum", "type": "quantitative", "stack": "center" },
+                "color": {
+                  "field": "Item",
+                  "type": "nominal",
+                  "scale": { "range": customColors }
+                },
+                "tooltip": [
+                  { "field": "Month", "type": "temporal" },
+                  { "field": "Item", "type": "nominal" },
+                  { "field": "TotalSum", "type": "quantitative" }
+                ]
+              },
+              "view": { "stroke": null }
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "title": "Histogram of Units with Global Mean Overlay",
+              "width": 500,
+              "height": 300,
+              "data": { "url": url, "format": { "type": "csv" } },
+              "transform": [
+                { "filter": "ItemFilter == null || datum.Item == ItemFilter" }
+              ],
+              "layer": [
+                {
+                  "mark": { "type": "bar", "color": "#5dade2" },
+                  "encoding": {
+                    "x": { "field": "Units", "bin": { "maxbins": 20 }, "type": "quantitative" },
+                    "y": { "aggregate": "count", "type": "quantitative" },
+                    "tooltip": [
+                      { "field": "Units", "bin": true, "type": "quantitative" },
+                      { "aggregate": "count", "field": "Units", "type": "quantitative" }
+                    ]
+                  }
+                },
+                {
+                  "mark": {
+                    "type": "rule",
+                    "color": "red",
+                    "size": 2,
+                    "strokeDash": [4, 4]
+                  },
+                  "encoding": {
+                    "x": {
+                      "aggregate": "mean",
+                      "field": "Units",
+                      "type": "quantitative"
+                    }
+                  }
+                }
+              ],
+              "view": { "stroke": null }
+            },
+            {
+              "title": "Total Sales by Region",
+              "width": 400,
+              "height": 300,
+              "data": { "url": url, "format": { "type": "csv" } },
+              "transform": [
+                {
+                  "aggregate": [{ "op": "sum", "field": "Total", "as": "TotalSales" }],
+                  "groupby": ["Region"]
+                }
+              ],
+              "mark": { "type": "bar", "color": "#52be80" },
+              "encoding": {
+                "x": { "field": "Region", "type": "nominal" },
+                "y": { "field": "TotalSales", "type": "quantitative" },
+                "color": {
+                  "field": "Region",
+                  "type": "nominal",
+                  "scale": { "range": customColors }
+                },
+                "tooltip": [
+                  { "field": "Region", "type": "nominal" },
+                  { "field": "TotalSales", "type": "quantitative" }
+                ]
+              },
+              "view": { "stroke": null }
+            },
+            {
+              "title": "Average Unit Cost Over Time",
+              "width": 500,
+              "height": 300,
+              "data": { "url": url, "format": { "type": "csv" } },
+              "transform": [
+                { "filter": "datum.OrderDate != null && datum.OrderDate !== ''" },
+                { "calculate": "toDate(datum.OrderDate)", "as": "ParsedDate" },
+                { "timeUnit": "yearmonth", "field": "ParsedDate", "as": "Month" },
+                { "filter": "ItemFilter == null || datum.Item == ItemFilter" },
+                {
+                  "aggregate": [{ "op": "mean", "field": "Unit Cost", "as": "AvgUnitCost" }],
+                  "groupby": ["Month"]
+                }
+              ],
+              "mark": { "type": "line", "point": true, "color": "#8e44ad" },
+              "encoding": {
+                "x": { "field": "Month", "type": "temporal" },
+                "y": { "field": "AvgUnitCost", "type": "quantitative" },
+                "tooltip": [
+                  { "field": "Month", "type": "temporal" },
+                  { "field": "AvgUnitCost", "type": "quantitative" }
+                ]
+              },
+              "view": { "stroke": null }
+            }
           ]
         }
-      },
-      line: {
-        $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-        data: { url: dataUrl },
-        transform: [{ calculate: "toDate(datum.OrderDate)", as: "ParsedDate" }],
-        mark: "line",
-        encoding: {
-          x: { field: "ParsedDate", type: "temporal" },
-          y: { field: "Unit Cost", type: "quantitative" },
-          color: { field: "Rep", type: "nominal", scale: { scheme: "category10" } },
-          tooltip: [{ field: "Rep" }, { field: "Unit Cost" }, { field: "ParsedDate" }]
-        }
-      }
+      ]
     };
 
-    vegaEmbed("#donut", specs.donut, { actions: false });
-    vegaEmbed("#scatter", specs.scatter, { actions: false });
-    vegaEmbed("#histogram", specs.histogram, { actions: false });
-    vegaEmbed("#stream", specs.stream, { actions: false });
-    vegaEmbed("#avgbar", specs.avgbar, { actions: false });
-    vegaEmbed("#line", specs.line, { actions: false });
+    vegaEmbed('#vis', spec).then(result => {}).catch(console.error);
   </script>
 </body>
 </html>
