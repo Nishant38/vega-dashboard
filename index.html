@@ -130,18 +130,32 @@
 
     function scatterPlot(filter) {
       return {
-        title: "Units vs Unit Cost by Item",
+        title: "Units vs Unit Cost by Item (Brush Enabled)",
         width: 400,
         height: 300,
         data: { url, format: { type: "csv" } },
         transform: [
           { filter: filter ? `datum.Item === '${filter}'` : "true" }
         ],
+        selection: {
+          brush: {
+            type: "interval",
+            encodings: ["x", "y"]
+          }
+        },
         mark: "point",
         encoding: {
           x: { field: "Units", type: "quantitative" },
           y: { field: "Unit Cost", type: "quantitative" },
-          color: { field: "Item", type: "nominal", scale: colorScheme() },
+          color: {
+            condition: {
+              selection: "brush",
+              field: "Item",
+              type: "nominal",
+              scale: colorScheme()
+            },
+            value: "lightgray"
+          },
           tooltip: [
             { field: "Item" },
             { field: "Units" },
@@ -151,6 +165,7 @@
         view: { stroke: null }
       };
     }
+
 
     function streamgraph(filter) {
       return {
